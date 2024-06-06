@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數字比大小翻牌遊戲</title>
+    <style>
+        body {
+            font-family: 華康少女文字W5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background: url(./比大小卡牌/卡牌背景.jpg);
+            background-size: cover;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        #player1-score {
+            font-size: 30px;
+            color: red;
+        }
+        #player2-score {
+            font-size: 30px;
+            color: blue;
+        }
+
+        .score {
+            font-size: 16px;
+        }
+
+        .current-player {
+            display: block;
+            font-size: 25px;
+            font-weight: bold;
+            text-align: center;
+            width: 100%;
+            color: green;
+        }
+
+        .card {
+            width: 70px;
+            height: 95px;
+            position: relative;
+            margin: 10px;
+            transform-style: preserve-3d;
+            float: left;
+            transition: transform 0.6s;
+            transform: rotateY(0deg);
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            border-radius: 5px;
+        }
+
+        .card-front {
+            background: url(./比大小卡牌/卡牌正面.png);
+            background-size: cover;
+            transform: rotateY(180deg);
+        }
+
+        .card-back {
+            background: url(./比大小卡牌/卡牌背面.png);
+            background-size: cover;
+            transform: rotateY(0deg);
+        }
+
+        .game-container {
+            text-align: center;
+        }
+
+        .game {
+            display: inline-block;
+            width: 600px;
+        }
+
+        .number {
+            display: none;
+        }
+
+        .card-open .number {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="scoreboard">
+        <div class="score" id="player1-score">玩家1得分：0</div>
+        <div class="score" id="player2-score">玩家2得分：0</div>
+    </div>
+    <div class="current-player" id="current-player">輪到玩家1翻牌！</div>
+    <div class="game-container">
+        <div id="game" class="game"></div>
+    </div>
+
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.js' integrity='sha512-+k1pnlgt4F1H8L7t3z95o3/KO+o78INEcXTbnoJQ/F2VqDVhWoaiVml/OEHv9HsVgxUaVW+IbiZPUJQfF/YxZw==' crossorigin='anonymous'></script>
+    <script>
+        $(document).ready(function () {
+            function generateCards(containerId) {
+                const container = $('#' + containerId);
+                const numbers = [...Array(48).keys()].map(n => n + 1); // 生成1到48的數字
+                numbers.sort(() => 0.5 - Math.random()); // 亂數出現
+
+                for (let i = 0; i < 48; i++) {
+                    container.append(`
+                        <div class="card card-close">
+                            <div class="card-front">
+                                <span class="number">${numbers[i]}</span>
+                            </div>
+                            <div class="card-back">
+                                <span class="number">${numbers[i]}</span>
+                            </div>
+                        </div>
+                    `);
+                }
+            }
+
+            function updateScore() {
+                $('#player1-score').text('玩家1得分：' + player1Score);
+                $('#player2-score').text('玩家2得分：' + player2Score);
+            }
+
+            function compareNumbers() {
+                const number1 = parseInt(flippedCards[0].find('.number').text());
+                const number2 = parseInt(flippedCards[1].find('.number').text());
+                if (number1 > number2) {
+                    alert('玩家1得到1分！');
+                    player1Score++;
+                } else if (number1 < number2) {
+                    alert('玩家2得到1分！');
+                    player2Score++;
+                } 
+                updateScore();
+                flippedCards = [];
+                checkForGameEnd(); // 檢查遊戲是否结束
+            }
+
+            function showCurrentPlayer() {
+                $('#current-player').text('輪到玩家' + currentPlayer + '翻牌！');
+            }
+
+            function checkForGameEnd() {
+                if ($('.card-close').length === 0) { // 所有卡片都已翻開
+                    if (player1Score > player2Score) {
+                        alert('遊戲結束！玩家1獲勝！');
+                    } else if (player1Score < player2Score) {
+                        alert('遊戲結束！玩家2獲勝！');
+                    } else {
+                        alert('遊戲結束！平局！');
+                    }
+                }
+            }
+
+            generateCards('game');
+
+            let currentPlayer = 1;
+            let player1Score = 0;
+            let player2Score = 0;
+            let flippedCards = [];
+
+            showCurrentPlayer();
+
+            $('.game').on('click', '.card', function () {
+                if ($(this).hasClass('card-close') && !$(this).hasClass('card-ok')) {
+                    $(this).removeClass('card-close').addClass('card-open flipped');
+                    $(this).find('.number').show();
+
+                    flippedCards.push($(this));
+
+                    if (flippedCards.length === 2) {
+                        setTimeout(function() {
+                            compareNumbers();
+                            flippedCards.forEach(card => card.addClass('card-ok'));
+                            flippedCards = [];
+                            currentPlayer = currentPlayer === 1 ? 2 : 1;
+                            showCurrentPlayer();
+                        }, 500);
+                    } else {
+                        currentPlayer = currentPlayer === 1 ? 2 : 1;
+                        showCurrentPlayer();
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
